@@ -4,6 +4,8 @@
 ##
 shopt -s nocasematch
 gamedir="$1"
+scriptdir="$(readlink -f "$(dirname "$0")")"
+
 if [ -z "$gamedir" ]; then
 	echo "Usage: $0 [gamedir]"
 	exit 1
@@ -37,6 +39,6 @@ for kix in "$datadir"/*.KIX; do
 	
 	pushd "$datadir/$name" &>/dev/null
 	echo "Extracting $name..."
-	kunp "$kix" "$kbf"
+	"${scriptdir}/kunp" "$kix" "$kbf"
 	popd &>/dev/null
 done
