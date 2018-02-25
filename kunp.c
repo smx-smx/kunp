@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <libgen.h>
+#include <limits.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -24,6 +26,18 @@ map_t kix_map, kbf_map;
 
 bool extract = false;
 
+/**
+ * basename and dirname might modify the source path.
+ * they also return a pointer to static memory that might be overwritten in subsequent calls
+ */
+char *my_dirname(const char *path){
+	char *cpy = strdup(path);
+	char *ret = dirname(cpy);
+	ret = strdup(ret);
+	free(cpy);
+	return ret;
+}
+
 void map_new(map_t *map, void *start, size_t size){
 	map->start = (uintptr_t)start;
 	map->size = size;
@@ -32,7 +46,8 @@ void map_new(map_t *map, void *start, size_t size){
 
 void print_kix_entry(int index, kix_node_t *node){
 	printf("#%-4d @0x%x->   0x%08x 0x%08x (%08zu bytes)    %d    %*.*s\n", 
-		index, (uintptr_t)node - kix_map.start,
+		index,
+		(uintptr_t)node - kix_map.start,
 		node->memAddr, node->offset, node->size,
 		node->type,
 		0, node->nameLen, node->name
@@ -134,23 +149,30 @@ int isKixFile(const char *path){
 	return isKixData((uint8_t *)&head);
 }
 
-int extract_kix_entry(kix_node_t *node){
+int extract_kix_entry(char *basedir, kix_node_t *node){
 	if(kbf_map.start == 0)
 		return -1;
 	if(node->offset + node->size > kbf_map.size){
 		fprintf(stderr, "ERROR: cannot extract! out of boundary (0x%08X >= 0x%08X)!\n", node->offset + node->size, kbf_map.size);
 		return -2;
 	}
+
+	// Get the file entry referenced by this index entry
 	kbf_node_t *data = (kbf_node_t *)(kbf_map.start + node->offset);
-	printf("Extracting to '%.32s'\n", data->name);
-	char tmp[33];
-	memset(&tmp, 0x00, 33);
-	strncpy(tmp, data->name, 33);
-	FILE *out = fopen(tmp, "wb");
+	
+	char *filePath;
+	asprintf(&filePath, "%s/%.32s", basedir, data->name);
+	printf("Extracting to '%s'\n", filePath);
+
+	FILE *out = fopen(filePath, "wb");
 	if(!out){
-		fprintf(stderr, "ERROR: cannot open output file '%s' for writing\n", data->name);
+		fprintf(stderr, "ERROR: cannot open output file '%s' for writing\n", filePath);
+		free(filePath);
 		return -3;
 	}
+
+	free(filePath);
+
 	int written = fwrite(data->data, 1, node->size, out);
 	
 	fflush(out); fclose(out);
@@ -169,7 +191,7 @@ void print_kix_block(kix_hdr_t *hdr){
 	printf("-----------------------\n");
 }
 
-long int parse_kix_block(kix_hdr_t *hdr){
+long int parse_kix_block(char *basedir, kix_hdr_t *hdr){
 	uintptr_t start = (uintptr_t)hdr;
 
 	print_kix_block(hdr);
@@ -180,14 +202,24 @@ long int parse_kix_block(kix_hdr_t *hdr){
 		kix_node_t *node = (kix_node_t *)start;
 		start += sizeof(*node);
 		parsed += sizeof(*node);
+		// nested KIX headers indicate directories
 		if(node->type == KIX_BLOCK){
-			printf("[DBG] parsing block\n");
-			parsed += parse_kix_block((kix_hdr_t *)(kix_map.start + node->offset));
+			printf("[DBG] parsing directory\n");
+			kix_hdr_t *dirent = (kix_hdr_t *)(kix_map.start + node->offset);
+			char *subdir;
+			asprintf(&subdir, "%s/%.32s", basedir, dirent->name);
+
+			mkdir(subdir, (mode_t)0777);
+
+			parsed += parse_kix_block(subdir, dirent);
 			parsed--; start--; //block doesn't have string size field
+			
+			free(subdir);
 		} else {
+			// Extract file entry
 			print_kix_entry(i, node);
 			if(extract){
-				extract_kix_entry(node);
+				extract_kix_entry(basedir, node);
 			}
 			start += node->nameLen;
 			parsed += node->nameLen;
@@ -246,7 +278,13 @@ int main(int argc, char **argv){
 		
 		map_new(&kix_map, map, kix_statBuf.st_size);
 		
-		int parsed = parse_kix_block((kix_hdr_t *)(kix_map.start));
+		char basedir[PATH_MAX + 1];
+		if (getcwd(basedir, sizeof(basedir)) == NULL){
+			perror("getcwd");
+			return EXIT_FAILURE;
+		}
+
+		int parsed = parse_kix_block((char *)&basedir, (kix_hdr_t *)(kix_map.start));
 		printf("[DBG] Done!, parsed %d bytes\n", parsed);
 		
 		munmap(map, kix_statBuf.st_size);
