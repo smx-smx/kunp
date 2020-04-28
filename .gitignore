@@ -5,3 +5,14 @@ build
 *.lib
 *.dll
 *.exe
+
+cache
+
+# Visual studio
+.vs/
+# Kdevelop
+.kdev4
+*.kdev4
+# vim
+compile_commands.json
+*.swp
