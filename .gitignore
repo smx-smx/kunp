@@ -8,6 +8,8 @@ build
 
 cache
 
+gamedir
+
 # Visual studio
 .vs/
 # Kdevelop
