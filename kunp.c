@@ -243,7 +243,7 @@ int main(int argc, char **argv){
 	if(argc > 2){
 		extract = true;
 		if((fd_kbf = open(argv[2], O_RDONLY)) < 0){
-			fprintf(stderr, "ERROR: cannot open KBF file '%s' (%s)\n", argv[1], strerror(errno));
+			fprintf(stderr, "ERROR: cannot open KBF file '%s' (%s)\n", argv[2], strerror(errno));
 			return EXIT_FAILURE;
 		}
 		if(stat(argv[2], &kbf_statBuf) < 0){
