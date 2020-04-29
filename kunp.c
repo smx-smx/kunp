@@ -9,12 +9,18 @@
 #include <string.h>
 #include <libgen.h>
 #include <limits.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include "kallisto.h"
+
+#ifdef _WIN32
+#include "mman-win32/mman.h"
+#else
+#include <sys/mman.h>
+#endif
+
 
 typedef struct {
 	uintptr_t start;
@@ -209,7 +215,11 @@ long int parse_kix_block(char *basedir, kix_hdr_t *hdr){
 			char *subdir;
 			asprintf(&subdir, "%s/%.32s", basedir, dirent->name);
 
+#ifdef _WIN32
+			mkdir(subdir);
+#else
 			mkdir(subdir, (mode_t)0777);
+#endif
 
 			parsed += parse_kix_block(subdir, dirent);
 			parsed--; start--; //block doesn't have string size field
@@ -246,11 +256,11 @@ int main(int argc, char **argv){
 			fprintf(stderr, "ERROR: cannot open KBF file '%s' (%s)\n", argv[2], strerror(errno));
 			return EXIT_FAILURE;
 		}
-		if(stat(argv[2], &kbf_statBuf) < 0){
+		if(fstat(fd_kbf, &kbf_statBuf) < 0){
 			perror("fstat failed");
 			return EXIT_FAILURE;
 		}
-		if((map2 = mmap(0, kix_statBuf.st_size, PROT_READ, MAP_SHARED, fd_kbf, 0)) == MAP_FAILED){
+		if((map2 = mmap(0, kbf_statBuf.st_size, PROT_READ, MAP_SHARED, fd_kbf, 0)) == MAP_FAILED){
 			perror("mmap");
 			return EXIT_FAILURE;
 		}
