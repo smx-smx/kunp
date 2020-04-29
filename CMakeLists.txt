@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
+project(KUnpacker VERSION 0.1 LANGUAGES CXX C)
+message(STATUS "project: ${PROJECT_NAME}")
+message(STATUS "version: ${PROJECT_VERSION}")
+
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(kunp
@@ -12,3 +16,28 @@ if(WIN32)
 	add_subdirectory(mman-win32)
 	target_link_libraries(kunp mman)
 endif(WIN32)
+
+add_subdirectory(libkunpacker)
+add_subdirectory(kunpacker)
+
+# Install
+include(GNUInstallDirs)
+install(EXPORT KUnpackerTargets
+  NAMESPACE kunpacker::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/KUnpacker
+  COMPONENT Devel)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(cmake/KUnpackerConfig.cmake.in
+  "${PROJECT_BINARY_DIR}/KUnpackerConfig.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/KUnpacker"
+  NO_SET_AND_CHECK_MACRO
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+write_basic_package_version_file(
+  "${PROJECT_BINARY_DIR}/KUnpackerConfigVersion.cmake"
+  COMPATIBILITY SameMajorVersion)
+install(
+  FILES
+  "${PROJECT_BINARY_DIR}/KUnpackerConfig.cmake"
+  "${PROJECT_BINARY_DIR}/KUnpackerConfigVersion.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/KUnpacker"
+  COMPONENT Devel)
