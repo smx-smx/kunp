@@ -5,7 +5,9 @@ message(STATUS "project: ${PROJECT_NAME}")
 message(STATUS "version: ${PROJECT_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)
+include(CTest)
 
+# Legacy project
 add_executable(kunp
 	mfile.c
 	kunp.cpp
@@ -17,6 +19,7 @@ if(WIN32)
 	target_link_libraries(kunp mman)
 endif(WIN32)
 
+# Mizux fork
 add_subdirectory(libkunpacker)
 add_subdirectory(kunpacker)
 
