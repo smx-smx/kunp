@@ -70,8 +70,6 @@ struct __attribute__((packed)) kix_hdr_t {
 		std::cout << util::ssprintf("--- KIX BLOCK @0x%x ---\n", moff(kix, this));
 		std::cout << util::ssprintf("Name: %.32s\n", name);
 		std::cout << util::ssprintf("nRecs: %d\n", numRecords);
-
-		kix_node_t *node = (kix_node_t *)((uint8_t *)this + sizeof(*this));
 	}
 };
 
