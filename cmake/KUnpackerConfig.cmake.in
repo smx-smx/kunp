@@ -1,6 +1,6 @@
-# CMakeCpp CMake configuration file
+# KUnpacker CMake configuration file
 
 #include(CMakeFindDependencyMacro)
 #find_dependency(Foo REQUIRED NO_MODULE)
 
-include("${CMAKE_CURRENT_LIST_DIR}/CMakeCppTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/KUnpackerTargets.cmake")
