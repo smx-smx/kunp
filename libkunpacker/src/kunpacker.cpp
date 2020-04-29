@@ -76,7 +76,8 @@ parseKixBlock(const fs::path& basedir, std::ifstream& kix) {
 	kix.seekg(sizeof(kix_hdr_t), std::ios::cur);
 	for (int i = 0; i < hdr.numRecords; i++) {
 		kix_node_t node;
-		getKixNode(kix, &node);
+		std::vector<char> name;
+		getKixNode(kix, &node, &name);
 
 		// nested KIX headers indicate directories
 		if (node.type == KIX_BLOCK) {
@@ -109,7 +110,7 @@ parseKixBlock(const fs::path& basedir, std::ifstream& kix) {
 			// Extract file entry
 			std::cout << "#" << std::to_string(i) << " "
 			          << "0x" << std::hex << kix.tellg() << std::dec << " ";
-			printKixNode(node);
+			printKixNode(node, name);
 			// Move input position indicator
 			kix.seekg(sizeof(kix_node_t) + node.nameLen, std::ios::cur);
 			// std::cout << "[DBG] start @0x" << std::hex << kix.tellg() << std::dec << "\n";
@@ -143,9 +144,10 @@ printKixHeader(std::ifstream& kix) {
 void
 printKixNode(int index, std::ifstream& kix) {
 	kix_node_t node;
-	getKixNode(kix, &node);
+	std::vector<char> name;
+	getKixNode(kix, &node, &name);
 	std::cout << "#" << index << " ";
-	printKixNode(node);
+	printKixNode(node, name);
 }
 
 void
@@ -157,10 +159,12 @@ getKixHdr(std::ifstream& kix, kix_hdr_t* hdr) {
 	kix.seekg(pos);
 }
 void
-getKixNode(std::ifstream& kix, kix_node_t* node) {
+getKixNode(std::ifstream& kix, kix_node_t* node, std::vector<char>* name) {
 	// Save the input position indicator
 	auto pos = kix.tellg();
 	kix.read(reinterpret_cast<char*>(node), sizeof(kix_node_t));
+	name->resize(node->nameLen);
+	kix.read(reinterpret_cast<char*>(name->data()), node->nameLen);
 	// Reset the input position indicator
 	kix.seekg(pos);
 }
@@ -172,14 +176,15 @@ printKixHeader(const kix_hdr_t& hdr) {
 }
 
 void
-printKixNode(const kix_node_t& node) {
+printKixNode(const kix_node_t& node, const std::vector<char>& name) {
 	std::cout << std::hex << "memAddr: 0x" << node.memAddr << " "
 	          << "offset: 0x" << node.offset << " "
 	          << "(" << std::dec << node.size << "bytes) "
 	          << "Type: " << std::to_string(node.type) << " ";
 
-	std::string name(node.name, node.nameLen);
-	std::cout << "name: '" << name.c_str() << "'\n";
+	std::string filename(name.data(), name.size());
+	std::cout << "size: '" << filename.size() << "' ";
+	std::cout << "name: '" << filename << "'\n";
 }
 
 void
@@ -191,7 +196,8 @@ parseKixBlock(const fs::path& basedir, std::ifstream& kix, std::ifstream& kbf) {
 	kix.seekg(sizeof(kix_hdr_t), std::ios::cur);
 	for (int i = 0; i < hdr.numRecords; i++) {
 		kix_node_t node;
-		getKixNode(kix, &node);
+		std::vector<char> name;
+		getKixNode(kix, &node, &name);
 
 		// nested KIX headers indicate directories
 		if (node.type == KIX_BLOCK) {
@@ -224,7 +230,7 @@ parseKixBlock(const fs::path& basedir, std::ifstream& kix, std::ifstream& kbf) {
 			// std::cout
 			//	<< "#" << std::to_string(i) << " "
 			//	<< "0x" << std::hex << kix.tellg() << std::dec << " ";
-			// printKixNode(node);
+			// printKixNode(node, name);
 			// Extract file entry
 			extractKixNode(basedir, kix, kbf);
 			// Move input position indicator
@@ -247,7 +253,8 @@ void
 extractKixNode(const fs::path& basedir, std::ifstream& kix, std::ifstream& kbf) {
 	if (fs::file_size(kbf_path) == 0) exit(-1);
 	kix_node_t node;
-	getKixNode(kix, &node);
+	std::vector<char> name;
+	getKixNode(kix, &node, &name);
 	if (node.offset + node.size > fs::file_size(kbf_path)) {
 		std::cerr << std::hex << "ERROR: cannot extract! out of boundary (0x"
 		          << node.offset + node.size << " >= 0x" << fs::file_size(kbf_path)
@@ -257,13 +264,17 @@ extractKixNode(const fs::path& basedir, std::ifstream& kix, std::ifstream& kbf) 
 
 	// Get the file entry referenced by this index entry
 	kbf.seekg(node.offset);
-	kbf_node_t data;
-	getKbfNode(kbf, &data);
+	kbf_node_t kbf_node;
+	getKbfNode(kbf, &kbf_node);
 
-	std::string name(data.name);
-	// std::cout << "[DBG] filename: '" << name << "'\n";
+	kbf.ignore(32);
+  uint8_t data[node.size];
+	kbf.read((char*)data, node.size);
 
-	fs::path filename = basedir / fs::path(name);
+	std::string kbf_name(kbf_node.name);
+	// std::cout << "[DBG] filename: '" << kbf_name << "'\n";
+
+	fs::path filename = basedir / fs::path(kbf_name);
 	std::cout << "Extracting: " << filename << "...\n";
 
 	std::ofstream ofs_out;
@@ -273,7 +284,7 @@ extractKixNode(const fs::path& basedir, std::ifstream& kix, std::ifstream& kbf) 
 		std::exit(EXIT_FAILURE);
 	}
 
-	ofs_out.write(reinterpret_cast<char*>(&(data.data)), node.size); // binary output
+	ofs_out.write(reinterpret_cast<char*>(data), node.size); // binary output
 	ofs_out.close();
 	std::cout << "Extracting: DONE\n";
 }

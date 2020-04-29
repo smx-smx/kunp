@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <vector>
 //#include <sys/mman.h>
 
 namespace fs = std::filesystem;
@@ -40,9 +41,9 @@ struct __attribute__((packed)) kix_node_t {
 };
 
 void getKixHdr(std::ifstream& kix, kix_hdr_t* hdr);
-void getKixNode(std::ifstream& kix, kix_node_t* node);
+void getKixNode(std::ifstream& kix, kix_node_t* node, std::vector<char>* name);
 void printKixHeader(const kix_hdr_t& hdr);
-void printKixNode(const kix_node_t& node);
+void printKixNode(const kix_node_t& node, const std::vector<char>& name);
 
 void extractKixNode(const fs::path& basedir, std::ifstream& kix, std::ifstream& kbf);
 
