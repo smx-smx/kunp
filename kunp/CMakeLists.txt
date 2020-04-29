@@ -13,7 +13,7 @@ endif()
 
 # Install
 include(GNUInstallDirs)
-install(TARGETS kunpackerbin
+install(TARGETS kunp
   EXPORT ${PROJECT_NAME}Targets
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
