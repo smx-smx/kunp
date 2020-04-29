@@ -24,6 +24,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -55,22 +56,16 @@ namespace util
 	}
 }
 
-/**
- * basename and dirname might modify the source path.
- * they also return a pointer to static memory that might be overwritten in subsequent calls
- */
-char *my_dirname(const char *path){
-	char *cpy = strdup(path);
-	char *ret = dirname(cpy);
-	ret = strdup(ret);
-	free(cpy);
-	return ret;
-}
+#ifdef _WIN32
+#define MKDIR(x) mkdir(x)
+#else
+#define MKDIR(x) mkdir(x, (mode_t)0777)
+#endif
 
 class HeraUnpacker {
 	private:
-	MFILE *kix;
-	MFILE *kbf;
+	MFILE *kix = nullptr;
+	MFILE *kbf = nullptr;
 
 	static bool isKixData(uint8_t *data){
 		kix_node_t *root = (kix_node_t *)(data + sizeof(kix_hdr_t));
@@ -160,11 +155,7 @@ class HeraUnpacker {
 				kix_hdr_t *dirent = (kix_hdr_t *)(mdata(kix, uint8_t) + node->offset);
 				std::string subdir = util::ssprintf("%s/%.32s", basedir, dirent->name);
 
-	#ifdef _WIN32
-				mkdir(subdir.c_str());
-	#else
-				mkdir(subdir.c_str(), (mode_t)0777);
-	#endif
+				MKDIR(subdir.c_str());
 
 				parsed += parse_kix_block(subdir.c_str(), dirent);
 				parsed--; start--; //block doesn't have string size field
@@ -184,17 +175,23 @@ class HeraUnpacker {
 	HeraUnpacker(const char *kixPath, const char *kbfPath){
 		this->kix = mopen(kixPath, O_RDONLY);
 		if(!this->kix){
-			throw util::ssprintf("Cannot open KIX file '%s' for reading");
+			throw std::invalid_argument(
+				util::ssprintf("Cannot open KIX file '%s' for reading", kixPath)
+			);
 		}
 		if(!isKixFile(this->kix)){
 			mclose(this->kix);
 			this->kix = nullptr;
-			throw util::ssprintf("'%s' is not a valid KIX file", kixPath);
+			throw std::invalid_argument(
+				util::ssprintf("'%s' is not a valid KIX file", kixPath)
+			);
 		}
 
 		this->kbf = mopen(kbfPath, O_RDONLY);
 		if(!this->kbf){
-			throw util::ssprintf("Cannot open KBF file '%s' for reading");
+			throw std::invalid_argument(
+				util::ssprintf("Cannot open KBF file '%s' for reading", kbfPath)
+			);
 		}
 	}
 
@@ -215,24 +212,30 @@ class HeraUnpacker {
 int main(int argc, char **argv){
 	std::cout << "Kallisto Index File (KIX) | Kallisto Binary File (KBF) Unpacker\n";
 	std::cout << "Copyright (C) 2020 Smx\n\n";
-	if(argc < 2){
+	if(argc < 3){
 		std::cerr << util::ssprintf("Usage: %s [file.kix] [file.kbf]\n", argv[0]);
 		return EXIT_FAILURE;
 	}
-		
-	int fd_kix, fd_kbf;
-	void *map, *map2;
+
 	struct stat kix_statBuf, kbf_statBuf;
 
-	char basedir[PATH_MAX + 1];
-	if (getcwd(basedir, sizeof(basedir)) == NULL){
-		perror("getcwd");
-		return EXIT_FAILURE;
+	std::filesystem::path cwd = std::filesystem::current_path();
+	std::filesystem::path kixName = std::filesystem::path(argv[1])
+								.filename()
+								.replace_extension("");
+	
+	std::string targetDirPath = (cwd / kixName).string();
+
+	const char *targetDir = targetDirPath.c_str();
+	MKDIR(targetDir);
+
+	int parsed = 0;
+	try {
+		HeraUnpacker unp(argv[1], argv[2]);
+		parsed = unp.parse_kix_block(targetDir);
+	} catch(const std::exception& e){
+		std::cerr << e.what() << std::endl;
 	}
-
-	HeraUnpacker unp(argv[1], argv[2]);
-	int parsed = unp.parse_kix_block((const char *)&basedir);
-
-	std::cout << util::ssprintf("[DBG] Done!, parsed %d bytes\n", parsed);		
+	std::cout << util::ssprintf("Done!, parsed %d bytes\n", parsed);		
 	return EXIT_SUCCESS;
 }
