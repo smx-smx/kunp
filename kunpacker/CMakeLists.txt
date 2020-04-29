@@ -4,7 +4,10 @@ target_sources(kunpackerbin
     src/main.cpp)
 target_compile_features(kunpackerbin PUBLIC cxx_std_17)
 set_target_properties(kunpackerbin PROPERTIES
-  VERSION ${PROJECT_VERSION})
+  VERSION ${PROJECT_VERSION}
+	CXX_STANDARD 17
+	CXX_STANDARD_REQUIRED ON
+	CXX_EXTENSIONS OFF)
 # note: macOS is APPLE and also UNIX !
 if(APPLE)
   set_target_properties(kunpackerbin PROPERTIES
