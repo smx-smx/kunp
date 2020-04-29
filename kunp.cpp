@@ -98,7 +98,7 @@ class HeraUnpacker {
 		std::cout << "-----------------------\n";
 		start += sizeof(*hdr);
 		
-		long int parsed = 0;
+		long int parsed = sizeof(*hdr);
 		for(uint i=0; i<hdr->numRecords; i++){
 			kix_node_t *node = (kix_node_t *)start;
 
