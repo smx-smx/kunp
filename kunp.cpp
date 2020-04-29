@@ -33,20 +33,7 @@
 #include "mfile.h"
 #include "kallisto.h"
 
-namespace util
-{
-	template< typename... Args >
-	std::string ssprintf(const char *format, Args... args) {
-		int length = std::snprintf(nullptr, 0, format, args...);
-		assert(length >= 0);
 
-		std::vector<char> buf(length + 1);
-		std::snprintf(buf.data(), length + 1, format, args...);
-
-		std::string str(buf.data());
-		return str;
-	}
-}
 
 #ifdef _WIN32
 #define MKDIR(x) mkdir(x)
@@ -60,12 +47,8 @@ class HeraUnpacker {
 	MFILE *kbf = nullptr;
 
 	static bool isKixData(uint8_t *data){
-		kix_node_t *root = (kix_node_t *)(data + sizeof(kix_hdr_t));
-		if(root->type != KIX_BLOCK && root->type != KIX_ENTRY)
-			return false;
-		if(root->nameLen > 32)
-			return false;
-		return true;
+		kix_node_t *root = (kix_node_t *)(data + sizeof(kix_node_t));
+		return (root->type == kixNodeType::Directory);
 	}
 
 	static bool isKixFile(MFILE *mf){
@@ -76,16 +59,6 @@ class HeraUnpacker {
 
 		uint8_t *head = mdata(mf, uint8_t);
 		return isKixData(head);
-	}
-
-	void print_kix_entry(int index, kix_node_t *node){
-		std::cout << util::ssprintf("#%-4d @0x%x->   0x%08x 0x%08x (%08zu bytes)    %d    %*.*s\n", 
-			index,
-			moff(kix, node),
-			node->memAddr, node->offset, node->size,
-			node->type,
-			0, node->nameLen, node->name
-		);
 	}
 
 	int extract_kix_entry(const char *basedir, kix_node_t *node){
@@ -118,44 +91,50 @@ class HeraUnpacker {
 		return 0;
 	}
 
-	void print_kix_block(kix_hdr_t *hdr){
-		std::cout << util::ssprintf("--- KIX BLOCK @0x%x ---\n", moff(kix, hdr));
-		std::cout << util::ssprintf("Name: %.32s\n", hdr->name);
-		std::cout << util::ssprintf("nRecs: %d\n", hdr->numRecords);
-
-		kix_node_t *node = (kix_node_t *)((uint8_t *)hdr + sizeof(*hdr));
-		print_kix_entry(0, node);
-		std::cout << "-----------------------\n";
-	}
-
 	long int parse_kix_block(const char *basedir, kix_hdr_t *hdr){
 		uintptr_t start = (uintptr_t)hdr;
 
-		print_kix_block(hdr);
+		hdr->print(kix);
+		std::cout << "-----------------------\n";
 		start += sizeof(*hdr);
 		
-		uint i, parsed = 0;
-		for(i=0; i<hdr->numRecords; i++){
+		long int parsed = 0;
+		for(uint i=0; i<hdr->numRecords; i++){
 			kix_node_t *node = (kix_node_t *)start;
-			start += sizeof(*node);
-			parsed += sizeof(*node);
+
 			// nested KIX headers indicate directories
-			if(node->type == KIX_BLOCK){
-				std::cout << "[DBG] parsing directory\n";
-				kix_hdr_t *dirent = (kix_hdr_t *)(mdata(kix, uint8_t) + node->offset);
-				std::string subdir = util::ssprintf("%s/%.32s", basedir, dirent->name);
+			switch(node->type){
+				case kixNodeType::Directory:
+				{				
+					start += sizeof(*node);
+					parsed += sizeof(*node);
 
-				MKDIR(subdir.c_str());
+					node->print(i, kix);
+					kix_hdr_t *dirent = (kix_hdr_t *)(mdata(kix, uint8_t) + node->offset);
+					std::string subdir = util::ssprintf("%s/%.32s", basedir, dirent->name);
 
-				parsed += parse_kix_block(subdir.c_str(), dirent);
-				parsed--; start--; //block doesn't have string size field
-			} else {
-				// Extract file entry
-				print_kix_entry(i, node);
-				extract_kix_entry(basedir, node);
+					MKDIR(subdir.c_str());
 
-				start += node->nameLen;
-				parsed += node->nameLen;
+					std::cout << '\n';
+					parsed += parse_kix_block(subdir.c_str(), dirent);
+					break;
+				}
+				case kixNodeType::File:
+				{
+					kix_filenode_t *file = (kix_filenode_t *)start;
+					start += sizeof(*file);
+					parsed += sizeof(*file);
+
+					// Extract file entry
+					file->print(i, kix);
+					extract_kix_entry(basedir, file);
+
+					start += file->nameLen;
+					parsed += file->nameLen;
+					break;
+				}
+				default:
+					throw util::ssprintf("Invalid block type '%d'", node->type);
 			}
 		}
 		return parsed;
@@ -183,6 +162,13 @@ class HeraUnpacker {
 				util::ssprintf("Cannot open KBF file '%s' for reading", kbfPath)
 			);
 		}
+	}
+
+	size_t kix_size(){
+		return msize(kix);
+	}
+	size_t kbf_size(){
+		return msize(kbf);
 	}
 
 	long int parse_kix_block(const char *basedir){
@@ -221,9 +207,10 @@ int main(int argc, char **argv){
 	try {
 		HeraUnpacker unp(argv[1], argv[2]);
 		parsed = unp.parse_kix_block(targetDir);
+		std::cout << util::ssprintf("Done!, parsed %zu/%zu bytes\n", parsed, unp.kix_size());
+		return EXIT_SUCCESS;
 	} catch(const std::exception& e){
 		std::cerr << e.what() << std::endl;
+		return EXIT_FAILURE;
 	}
-	std::cout << util::ssprintf("Done!, parsed %d bytes\n", parsed);		
-	return EXIT_SUCCESS;
 }
