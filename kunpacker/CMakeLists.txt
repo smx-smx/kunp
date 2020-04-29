@@ -1,4 +1,4 @@
-add_executable(kunpackerbin "")
+add_executable(kunpackerbin)
 target_sources(kunpackerbin
   PRIVATE
     src/main.cpp)
