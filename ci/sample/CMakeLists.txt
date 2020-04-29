@@ -5,8 +5,11 @@ include(CTest)
 find_package(KUnpacker CONFIG REQUIRED)
 
 add_executable(sample main.cpp)
-target_compile_features(sample PUBLIC cxx_std_11)
-set_target_properties(sample PROPERTIES VERSION ${PROJECT_VERSION})
+target_compile_features(sample PUBLIC cxx_std_17)
+set_target_properties(sample PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED ON
+  VERSION ${PROJECT_VERSION})
 target_link_libraries(sample PRIVATE kunpacker::kunpacker)
 
 if(BUILD_TESTING)
