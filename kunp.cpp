@@ -20,23 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  **/
-#include <cassert>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <fstream>
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <libgen.h>
-#include <limits.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
+#include <cstdio>
+#include <cstdint>
+#include <cassert>
 
 #include "mfile.h"
 #include "kallisto.h"
@@ -89,7 +81,7 @@ class HeraUnpacker {
 	void print_kix_entry(int index, kix_node_t *node){
 		std::cout << util::ssprintf("#%-4d @0x%x->   0x%08x 0x%08x (%08zu bytes)    %d    %*.*s\n", 
 			index,
-			(uintptr_t)node - (uintptr_t)mdata(kix, uint8_t),
+			moff(kix, node),
 			node->memAddr, node->offset, node->size,
 			node->type,
 			0, node->nameLen, node->name
@@ -111,17 +103,13 @@ class HeraUnpacker {
 		std::string filePath = util::ssprintf("%s/%.32s", basedir, data->name);
 		std::cout << util::ssprintf("Extracting to '%s'\n", filePath.c_str());
 
-		FILE *out = fopen(filePath.c_str(), "wb");
-		if(!out){
+		std::ofstream out(filePath, std::ofstream::binary);
+		if(!out.is_open()){
 			std::cerr << util::ssprintf("ERROR: cannot open output file '%s' for writing\n", filePath.c_str());
 			return -3;
 		}
-
-		int written = fwrite(data->data, 1, node->size, out);
-		
-		fflush(out);
-		fclose(out);
-		
+		out.write((char *)data->data, node->size);
+		off_t written = out.tellp();
 		if(written != node->size){
 			std::cerr << util::ssprintf("WARNING: Expected %zu bytes, but written %zu\n", node->size, written);
 			return -4;
@@ -131,10 +119,12 @@ class HeraUnpacker {
 	}
 
 	void print_kix_block(kix_hdr_t *hdr){
-		std::cout << util::ssprintf("--- KIX BLOCK @0x%x ---\n", (uintptr_t)hdr - (uintptr_t)mdata(kix, uint8_t));
+		std::cout << util::ssprintf("--- KIX BLOCK @0x%x ---\n", moff(kix, hdr));
 		std::cout << util::ssprintf("Name: %.32s\n", hdr->name);
 		std::cout << util::ssprintf("nRecs: %d\n", hdr->numRecords);
-		print_kix_entry(0, (kix_node_t *)((uintptr_t)hdr + sizeof(*hdr)));
+
+		kix_node_t *node = (kix_node_t *)((uint8_t *)hdr + sizeof(*hdr));
+		print_kix_entry(0, node);
 		std::cout << "-----------------------\n";
 	}
 
@@ -144,7 +134,7 @@ class HeraUnpacker {
 		print_kix_block(hdr);
 		start += sizeof(*hdr);
 		
-		int i, parsed = 0;
+		uint i, parsed = 0;
 		for(i=0; i<hdr->numRecords; i++){
 			kix_node_t *node = (kix_node_t *)start;
 			start += sizeof(*node);
@@ -216,8 +206,6 @@ int main(int argc, char **argv){
 		std::cerr << util::ssprintf("Usage: %s [file.kix] [file.kbf]\n", argv[0]);
 		return EXIT_FAILURE;
 	}
-
-	struct stat kix_statBuf, kbf_statBuf;
 
 	std::filesystem::path cwd = std::filesystem::current_path();
 	std::filesystem::path kixName = std::filesystem::path(argv[1])
