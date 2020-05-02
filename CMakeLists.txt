@@ -8,18 +8,18 @@ message(STATUS "project: ${PROJECT_NAME}")
 message(STATUS "version: ${PROJECT_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 include(CTest)
 
 # Legacy project
-add_executable(kunp
-	mfile.c
-	kunp.cpp
-)
+add_subdirectory(kunp)
 
 if(WIN32)
-	set(BUILD_SHARED_LIBS OFF)
-	add_subdirectory(mman-win32)
-	target_link_libraries(kunp mman)
+  set(BUILD_SHARED_LIBS OFF)
+  add_subdirectory(mman-win32)
+  target_link_libraries(kunp mman)
 endif(WIN32)
 
 # Mizux fork

@@ -1,8 +1,8 @@
 add_executable(kunp)
 target_sources(kunp
-	PRIVATE
-	  kunp.c
-		kallisto.h)
+  PRIVATE
+   kallisto.h kunp.cpp
+   mfile.h mfile.c)
 set_target_properties(kunp PROPERTIES
   VERSION ${PROJECT_VERSION})
 add_executable(kunpacker::kunp ALIAS kunp)
