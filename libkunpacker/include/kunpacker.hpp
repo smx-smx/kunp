@@ -27,12 +27,12 @@ void printKixHeader(std::ifstream& kix);
 void printKixNode(int index, std::ifstream& kix);
 
 struct __attribute__((packed)) kixHdr_t {
+ public:
   char name[32];
   std::uint32_t numRecords;
 };
 
 enum class kixNodeType : uint8_t { DIRECTORY = 0, FILE = 1 };
-
 std::ostream& operator<<(std::ostream& os, kixNodeType type);
 
 struct __attribute__((packed)) kixNode_t {
@@ -49,7 +49,7 @@ struct __attribute__((packed)) kixFileNode_t : public kixNode_t {
 };
 
 void getKixHdr(std::ifstream& kix, kixHdr_t* hdr);
-void getKixNode(std::ifstream& kix, kixNode_t* node, std::vector<char>* name);
+void getKixNode(std::ifstream& kix, kixFileNode_t* node, std::vector<char>* name);
 void printKixHeader(const kixHdr_t& hdr);
 void printKixNode(const kixNode_t& node, const std::vector<char>& name);
 
