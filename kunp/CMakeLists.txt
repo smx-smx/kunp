@@ -4,7 +4,10 @@ target_sources(kunp
    kallisto.h kunp.cpp
    mfile.h mfile.c)
 set_target_properties(kunp PROPERTIES
-  VERSION ${PROJECT_VERSION})
+  VERSION ${PROJECT_VERSION}
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF)
 add_executable(kunpacker::kunp ALIAS kunp)
 
 if(BUILD_TESTING)
