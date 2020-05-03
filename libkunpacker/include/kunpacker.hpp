@@ -36,10 +36,14 @@ enum class kixNodeType : uint8_t { DIRECTORY = 0, FILE = 1 };
 std::ostream& operator<<(std::ostream& os, kixNodeType type);
 
 struct __attribute__((packed)) kixNode_t {
+ public:
   kixNodeType type;
   std::uint32_t memAddr;
   std::uint32_t offset;
   std::uint32_t size;
+};
+
+struct __attribute__((packed)) kixFileNode_t : public kixNode_t {
   std::uint8_t nameLen;  // not present for KIX_BLOCK
   char name[];
 };

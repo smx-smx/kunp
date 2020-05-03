@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
   std::cout << "Copyright (C) 2020 Smx\n\n";
   if (argc < 3) {
     std::cerr << util::ssprintf("Usage: %s [file.kix] [file.kbf]\n", argv[0]);
-    return EXIT_FAILURE;
+    return EXIT_SUCCESS;
   }
 
   std::filesystem::path cwd = std::filesystem::current_path();

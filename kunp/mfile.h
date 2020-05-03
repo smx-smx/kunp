@@ -1,6 +1,6 @@
 /*
-	A mmap file wrapper
-	Copyright 2016 Smx
+        A mmap file wrapper
+        Copyright 2016 Smx
 */
 #ifndef __MFILE_H
 #define __MFILE_H
@@ -9,9 +9,9 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
-#include <stdint.h>
 #include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <sys/stat.h>
 
 #ifdef _WIN32
@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 #define MFILE_ANON(size) \
-	mmap(0, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, 0, 0)
+  mmap(0, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, 0, 0)
 
 /* Gets the size of the memory mapped file */
 #define msize(mfile) mfile->statBuf.st_size
@@ -33,37 +33,28 @@ extern "C" {
 #define moff(mfile, ptr) (off_t)((uintptr_t)ptr - (uintptr_t)(mfile->pMem))
 
 #define mwriteat(mfile, off, ptr, size) \
-	memcpy( \
-		(void *)(&(mdata(mfile, uint8_t))[off]), \
-		(void *)ptr, \
-		size \
-	)
+  memcpy((void *)(&(mdata(mfile, uint8_t))[off]), (void *)ptr, size)
 
-#define mwrite(ptr, size, nmemb, mfile) \
-	mwriteat( \
-		mfile, \
-		mfile->offset, \
-		ptr, \
-		(size * nmemb) \
-	); \
-	mfile->offset += (size * nmemb)
-	
+#define mwrite(ptr, size, nmemb, mfile)                \
+  mwriteat(mfile, mfile->offset, ptr, (size * nmemb)); \
+  mfile->offset += (size * nmemb)
+
 #define mrewind(mfile) mfile->offset = 0
 
 typedef struct {
-	uint8_t *ptr;
-	off_t offset;
-	size_t size;
+  uint8_t *ptr;
+  off_t offset;
+  size_t size;
 } cursor_t;
 
 typedef struct {
-	char *path;
-	int fd;
-	FILE *fh;
-	off_t offset;
-	int prot;
-	struct stat statBuf;
-	void *pMem;
+  char *path;
+  int fd;
+  FILE *fh;
+  off_t offset;
+  int prot;
+  struct stat statBuf;
+  void *pMem;
 } MFILE;
 
 MFILE *mfile_new();
