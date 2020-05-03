@@ -16,6 +16,8 @@ gamedir
 # Kdevelop
 .kdev4
 *.kdev4
+# QT Creator
+CMakeLists.txt.user
 # vim
 compile_commands.json
 *.swp
