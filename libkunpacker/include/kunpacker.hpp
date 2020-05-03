@@ -5,7 +5,6 @@
 #include <fstream>
 #include <string>
 #include <vector>
-//#include <sys/mman.h>
 
 namespace fs = std::filesystem;
 
@@ -14,10 +13,10 @@ extern fs::path kix_path;
 extern fs::path kbf_path;
 
 bool isKixFile(const fs::path& path);
-bool isKixData(const uint8_t* data);
+bool isKixData(const std::uint8_t* data);
 
 bool isHeraFile(const fs::path& path);
-bool isHeraData(const uint8_t* data);
+bool isHeraData(const std::uint8_t* data);
 
 void parseKixBlock(const fs::path& basedir, std::ifstream& kix);
 void parseKixBlock(const fs::path& basedir, std::ifstream& kix, std::ifstream& kbf);
@@ -26,13 +25,25 @@ void printKixBlock(std::ifstream& kix);
 void printKixHeader(std::ifstream& kix);
 void printKixNode(int index, std::ifstream& kix);
 
-struct __attribute__((packed)) kix_hdr_t {
+struct __attribute__((packed)) kixHdr_t {
 	char name[32];
 	std::uint32_t numRecords;
 };
 
-struct __attribute__((packed)) kix_node_t {
-	std::uint8_t type;
+enum class kixNodeType : uint8_t { DIRECTORY = 0, FILE = 1 };
+
+std::ostream&
+operator<<(std::ostream& os, kixNodeType type) {
+	switch (type) {
+		case kixNodeType::DIRECTORY:
+			return os << "Directory";
+		case kixNodeType::FILE:
+			return os << "File";
+	};
+}
+
+struct __attribute__((packed)) kixNode_t {
+	kixNodeType type;
 	std::uint32_t memAddr;
 	std::uint32_t offset;
 	std::uint32_t size;
@@ -40,29 +51,17 @@ struct __attribute__((packed)) kix_node_t {
 	char name[];
 };
 
-void getKixHdr(std::ifstream& kix, kix_hdr_t* hdr);
-void getKixNode(std::ifstream& kix, kix_node_t* node, std::vector<char>* name);
-void printKixHeader(const kix_hdr_t& hdr);
-void printKixNode(const kix_node_t& node, const std::vector<char>& name);
+void getKixHdr(std::ifstream& kix, kixHdr_t* hdr);
+void getKixNode(std::ifstream& kix, kixNode_t* node, std::vector<char>* name);
+void printKixHeader(const kixHdr_t& hdr);
+void printKixNode(const kixNode_t& node, const std::vector<char>& name);
 
 void extractKixNode(const fs::path& basedir, std::ifstream& kix, std::ifstream& kbf);
 
 struct __attribute__((packed)) kbf_node_t {
 	char name[32];
-	uint8_t data[];
+	std::uint8_t data[];
 };
 
 void getKbfNode(std::ifstream& kbf, kbf_node_t* node);
-
-/*
-     struct map_t {
-     std::uintptr_t start;
-     std::uintptr_t end;
-     std::size_t size;
-     };
-
-     long int parse_kix_block(char* basedir, kix_hdr_t* hdr, const map_t& kix_map);
-
-     void map_new(map_t* map, void* start, std::size_t size);
-     */
 } // namespace ku
