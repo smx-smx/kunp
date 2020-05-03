@@ -29,9 +29,9 @@ enum class kixNodeType : uint8_t { Directory = 0, File = 1 };
 
 struct __attribute__((packed)) kix_node_t {
   kixNodeType type;
-  uint32_t memAddr;
-  uint32_t offset;
-  uint32_t size;
+  std::uint32_t memAddr;
+  std::uint32_t offset;
+  std::uint32_t size;
 
   void print(int index, MFILE *kix) {
     std::cout << util::ssprintf(
@@ -42,7 +42,7 @@ struct __attribute__((packed)) kix_node_t {
 };
 
 struct __attribute__((packed)) kix_filenode_t : kix_node_t {
-  uint8_t nameLen;
+  std::uint8_t nameLen;
   char name[];
 
   void print(int index, MFILE *kix) {
@@ -54,7 +54,7 @@ struct __attribute__((packed)) kix_filenode_t : kix_node_t {
 
 struct __attribute__((packed)) kix_hdr_t {
   char name[32];
-  uint32_t numRecords;
+  std::uint32_t numRecords;
 
   void print(MFILE *kix) {
     std::cout << util::ssprintf("--- KIX BLOCK @0x%x ---\n", moff(kix, this));

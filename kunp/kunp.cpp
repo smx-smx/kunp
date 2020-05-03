@@ -50,7 +50,7 @@ class HeraUnpacker {
 
   static bool isKixFile(MFILE* mf) {
     size_t headSz = sizeof(kix_hdr_t) + sizeof(kix_node_t);
-    if (msize(mf) < headSz) {
+    if ((size_t)msize(mf) < headSz) {
       return false;
     }
 
@@ -102,7 +102,7 @@ class HeraUnpacker {
     start += sizeof(*hdr);
 
     long int parsed = sizeof(*hdr);
-    for (uint i = 0; i < hdr->numRecords; i++) {
+    for (std::uint32_t i = 0; i < hdr->numRecords; i++) {
       kix_node_t* node = (kix_node_t*)start;
 
       // nested KIX headers indicate directories
