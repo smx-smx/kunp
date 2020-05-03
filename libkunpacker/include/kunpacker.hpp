@@ -49,7 +49,8 @@ struct __attribute__((packed)) kixFileNode_t : public kixNode_t {
 };
 
 void getKixHdr(std::ifstream& kix, kixHdr_t* hdr);
-void getKixNode(std::ifstream& kix, kixFileNode_t* node, std::vector<char>* name);
+void getKixNode(std::ifstream& kix, kixFileNode_t* node,
+                std::vector<char>* name);
 void printKixHeader(const kixHdr_t& hdr);
 void printKixNode(const kixNode_t& node, const std::vector<char>& name);
 

@@ -158,7 +158,8 @@ void getKixHdr(std::ifstream& kix, kixHdr_t* hdr) {
   // Reset the input position indicator
   kix.seekg(pos);
 }
-void getKixNode(std::ifstream& kix, kixFileNode_t *node, std::vector<char>* name) {
+void getKixNode(std::ifstream& kix, kixFileNode_t* node,
+                std::vector<char>* name) {
   // Save the input position indicator
   auto pos = kix.tellg();
   kix.read(reinterpret_cast<char*>(node), sizeof(kixFileNode_t));
