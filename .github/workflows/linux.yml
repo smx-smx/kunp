@@ -8,6 +8,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Check GCC
+      run: ls /usr/bin/g*
+    - name: Check GCC
+      run: ls -R /opt/gcc/
     - name: Configure
       run: cmake -S. -Bbuild -DCMAKE_C_COMPILER=/usr/bin/gcc-9.2 -DCMAKE_CXX_COMPILER=/usr/bin/g++-9.2 -DCMAKE_BUILD_TYPE=Release
     - name: Build
