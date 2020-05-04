@@ -267,8 +267,8 @@ void extractKixNode(const fs::path& basedir, std::ifstream& kix,
   getKbfNode(kbf, &kbf_node);
 
   kbf.ignore(32);
-  std::uint8_t data[node.size];
-  kbf.read((char*)data, node.size);
+  std::vector<std::uint8_t> data(node.size);
+  kbf.read(reinterpret_cast<char*>(data.data()), node.size);
 
   std::string kbf_name(kbf_node.name);
   // std::cout << "[DBG] filename: '" << kbf_name << "'\n";
@@ -283,7 +283,7 @@ void extractKixNode(const fs::path& basedir, std::ifstream& kix,
     std::exit(EXIT_FAILURE);
   }
 
-  ofs_out.write(reinterpret_cast<char*>(data), node.size);  // binary output
+  ofs_out.write(reinterpret_cast<char*>(data.data()), node.size);  // binary output
   ofs_out.close();
   std::cout << "Extracting: DONE\n";
 }
