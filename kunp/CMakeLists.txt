@@ -7,8 +7,8 @@ target_compile_features(kunp PUBLIC cxx_std_17)
 set_target_properties(kunp PROPERTIES
   VERSION ${PROJECT_VERSION}
   CXX_STANDARD 17
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS OFF)
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO)
 add_executable(kunpacker::kunp ALIAS kunp)
 
 if(BUILD_TESTING)

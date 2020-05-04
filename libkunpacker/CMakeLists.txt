@@ -12,8 +12,8 @@ target_compile_features(kunpacker PUBLIC cxx_std_17)
 set_target_properties(kunpacker PROPERTIES
   VERSION ${PROJECT_VERSION}
   CXX_STANDARD 17
-  CXX_STANDARD_REQUIRED ON
-  CXX_EXTENSIONS OFF
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO
   PUBLIC_HEADER include/kunpacker.hpp)
 add_library(kunpacker::kunpacker ALIAS kunpacker)
 
