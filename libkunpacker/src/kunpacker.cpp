@@ -240,10 +240,10 @@ void parseKixBlock(const fs::path& basedir, std::ifstream& kix,
   }
 }
 
-void getKbfNode(std::ifstream& kbf, kbf_node_t* node) {
+void getKbfNode(std::ifstream& kbf, kbfNode_t* node) {
   // Save the input position indicator
   auto pos = kbf.tellg();
-  kbf.read(reinterpret_cast<char*>(node), sizeof(kbf_node_t));
+  kbf.read(reinterpret_cast<char*>(node), sizeof(kbfNode_t));
   // Reset the input position indicator
   kbf.seekg(pos);
 }
@@ -263,7 +263,7 @@ void extractKixNode(const fs::path& basedir, std::ifstream& kix,
 
   // Get the file entry referenced by this index entry
   kbf.seekg(node.offset);
-  kbf_node_t kbf_node;
+  kbfNode_t kbf_node;
   getKbfNode(kbf, &kbf_node);
 
   kbf.ignore(32);

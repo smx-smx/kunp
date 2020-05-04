@@ -26,7 +26,7 @@ void printKixBlock(std::ifstream& kix);
 void printKixHeader(std::ifstream& kix);
 void printKixNode(int index, std::ifstream& kix);
 
-struct __attribute__((packed)) kixHdr_t {
+struct [[gnu::packed]] kixHdr_t {
  public:
   char name[32];
   std::uint32_t numRecords;
@@ -35,7 +35,7 @@ struct __attribute__((packed)) kixHdr_t {
 enum class kixNodeType : uint8_t { DIRECTORY = 0, FILE = 1 };
 std::ostream& operator<<(std::ostream& os, kixNodeType type);
 
-struct __attribute__((packed)) kixNode_t {
+struct [[gnu::packed]] kixNode_t {
  public:
   kixNodeType type;
   std::uint32_t memAddr;
@@ -43,7 +43,7 @@ struct __attribute__((packed)) kixNode_t {
   std::uint32_t size;
 };
 
-struct __attribute__((packed)) kixFileNode_t : public kixNode_t {
+struct [[gnu::packed]] kixFileNode_t : public kixNode_t {
   std::uint8_t nameLen;  // not present for KIX_BLOCK
   char name[];
 };
@@ -57,10 +57,10 @@ void printKixNode(const kixNode_t& node, const std::vector<char>& name);
 void extractKixNode(const fs::path& basedir, std::ifstream& kix,
                     std::ifstream& kbf);
 
-struct __attribute__((packed)) kbf_node_t {
+struct [[gnu::packed]] kbfNode_t {
   char name[32];
   std::uint8_t data[];
 };
 
-void getKbfNode(std::ifstream& kbf, kbf_node_t* node);
+void getKbfNode(std::ifstream& kbf, kbfNode_t* node);
 }  // namespace ku
